@@ -32,7 +32,7 @@ public class SportRoutes {
 
     @Bean
     RouterFunction<ServerResponse> sportOperations() {
-        return route(POST("/api/v1/sport/{sportName]}"),
+        return route(POST("/api/v1/sport/{sportName}"),
                 request ->
                         sportService.createSport(request.pathVariable("sportName"))
                                 .flatMap(sport -> ok()

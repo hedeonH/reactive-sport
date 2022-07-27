@@ -1,6 +1,7 @@
 package mentorship.reactivesport.service;
 
 import mentorship.reactivesport.document.SportDocument;
+import mentorship.reactivesport.dto.Root;
 import mentorship.reactivesport.dto.SportDto;
 import mentorship.reactivesport.mapper.SportMapper;
 import mentorship.reactivesport.repository.SportRepository;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.ExchangeFunction;
 import org.springframework.web.reactive.function.client.ExchangeFunctions;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -32,7 +34,7 @@ public class SportService {
 
     public Mono<SportDto> createSport(String sportName) {
         return sportRepository.existsByName(sportName).flatMap(boo -> {
-            if (boo != null && boo) {
+            if (boo != null && !boo) {
                 return sportRepository.save(SportDocument.builder().name(sportName).build()).map(sportMapper::toDTO);
             } else {
                 return Mono.error(new RuntimeException());
@@ -47,10 +49,16 @@ public class SportService {
     public Flux<SportDto> populateSports() {
         URI uri = URI.create("https://sports.api.decathlon.com/sports");
         ClientRequest request = ClientRequest.create(HttpMethod.GET, uri).build();
-        return sportRepository.saveAll(
-                        exchange.exchange(request)
-                                .flatMapMany(response -> response.bodyToFlux(SportDto.class)
-                                        .map(sportMapper::toDocument)))
+        WebClient client = WebClient.create();
+        return sportRepository.saveAll(client.get()
+                        .uri("https://sports.api.decathlon.com/sports")
+                        .retrieve()
+                        .bodyToMono(Root.class)
+                        .flatMapIterable(Root::getData)
+                        .map(sportMapper::toDocument)
+                        .checkpoint("before backpressure buffer")
+                        .onBackpressureBuffer(20)
+                        .checkpoint("after backpressure buffer"))
                 .map(sportMapper::toDTO);
     }
 }

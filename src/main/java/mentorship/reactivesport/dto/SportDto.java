@@ -2,9 +2,11 @@ package mentorship.reactivesport.dto;
 
 import lombok.Data;
 
+import java.math.BigInteger;
+
 @Data
 public class SportDto {
 
-    Integer id;
+    BigInteger id;
     String name;
 }

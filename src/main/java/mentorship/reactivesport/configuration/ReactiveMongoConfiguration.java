@@ -16,6 +16,6 @@ public class ReactiveMongoConfiguration extends AbstractReactiveMongoConfigurati
 
     @Override
     protected String getDatabaseName() {
-        return "reactive";
+        return "sport";
     }
 }
