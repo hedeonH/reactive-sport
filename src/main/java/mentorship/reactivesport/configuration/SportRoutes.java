@@ -1,8 +1,10 @@
 package mentorship.reactivesport.configuration;
 
+import io.netty.util.internal.StringUtil;
 import mentorship.reactivesport.service.SportService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.reactive.config.EnableWebFlux;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
@@ -13,10 +15,10 @@ import static org.springframework.web.reactive.function.BodyInserters.fromValue;
 import static org.springframework.web.reactive.function.server.RequestPredicates.GET;
 import static org.springframework.web.reactive.function.server.RequestPredicates.POST;
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
-import static org.springframework.web.reactive.function.server.ServerResponse.noContent;
 import static org.springframework.web.reactive.function.server.ServerResponse.ok;
 
 @Configuration
+@EnableWebFlux
 public class SportRoutes {
 
     private final SportService sportService;
@@ -42,21 +44,11 @@ public class SportRoutes {
         ).andRoute(GET("/api/v1/sport"),
                 request ->
                         sportService.findSports(
-                                        List.of(request.queryParam("q").get().split(",")
+                                        List.of(request.queryParam("q").orElse(StringUtil.EMPTY_STRING)
                                         )
                                 )
                                 .collectList()
                                 .flatMap(sportDtos -> ok().contentType(APPLICATION_JSON).bodyValue(sportDtos))
-        );
-    }
-
-    @Bean
-    RouterFunction<ServerResponse> populateSports() {
-        return route(POST("api/v1/sport/populate"),
-                request -> sportService.populateSports()
-                        .collectList()
-                        .flatMap(list -> noContent().build()
-                        )
         );
     }
 }

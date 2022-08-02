@@ -1,35 +1,31 @@
 package mentorship.reactivesport.service;
 
 import mentorship.reactivesport.document.SportDocument;
-import mentorship.reactivesport.dto.Root;
+import mentorship.reactivesport.dto.SportAWS;
 import mentorship.reactivesport.dto.SportDto;
 import mentorship.reactivesport.mapper.SportMapper;
 import mentorship.reactivesport.repository.SportRepository;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.ClientRequest;
-import org.springframework.web.reactive.function.client.ExchangeFunction;
-import org.springframework.web.reactive.function.client.ExchangeFunctions;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.net.URI;
 import java.util.List;
 
 @Service
 public class SportService {
 
+    public static final String URI = "http://localhost:3008/sports";
     private final SportRepository sportRepository;
 
     private final SportMapper sportMapper;
 
-    private final ExchangeFunction exchange = ExchangeFunctions.create(new ReactorClientHttpConnector());
+    private final WebClient webClient;
 
-    public SportService(SportRepository sportRepository, SportMapper sportMapper) {
+    public SportService(SportRepository sportRepository, SportMapper sportMapper, WebClient webClient) {
         this.sportRepository = sportRepository;
         this.sportMapper = sportMapper;
+        this.webClient = webClient;
     }
 
     public Mono<SportDto> createSport(String sportName) {
@@ -46,19 +42,15 @@ public class SportService {
         return sportRepository.findAllByNameIn(sportNames).map(sportMapper::toDTO);
     }
 
-    public Flux<SportDto> populateSports() {
-        URI uri = URI.create("https://sports.api.decathlon.com/sports");
-        ClientRequest request = ClientRequest.create(HttpMethod.GET, uri).build();
-        WebClient client = WebClient.create();
-        return sportRepository.saveAll(client.get()
-                        .uri("https://sports.api.decathlon.com/sports")
-                        .retrieve()
-                        .bodyToMono(Root.class)
-                        .flatMapIterable(Root::getData)
-                        .map(sportMapper::toDocument)
-                        .checkpoint("before backpressure buffer")
-                        .onBackpressureBuffer(20)
-                        .checkpoint("after backpressure buffer"))
-                .map(sportMapper::toDTO);
+    public List<SportDto> populateSports() {
+        return webClient.get()
+                .uri(URI)
+                .retrieve()
+                .bodyToFlux(SportAWS.class)
+                .map(sportMapper::toDocument)
+                .flatMap(sportRepository::save)
+                .map(sportMapper::toDTO)
+                .collectList()
+                .block();
     }
 }

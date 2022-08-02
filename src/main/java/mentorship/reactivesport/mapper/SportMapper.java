@@ -1,17 +1,16 @@
 package mentorship.reactivesport.mapper;
 
 import mentorship.reactivesport.document.SportDocument;
-import mentorship.reactivesport.dto.Datum;
+import mentorship.reactivesport.dto.SportAWS;
 import mentorship.reactivesport.dto.SportDto;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface SportMapper {
 
-    SportDocument toDocument(SportDto sportDto);
-
     SportDto toDTO(SportDocument sportDocument);
 
-
-    SportDocument toDocument(Datum data);
+    @Mapping(source = "attributes.name", target = "name")
+    SportDocument toDocument(SportAWS data);
 }

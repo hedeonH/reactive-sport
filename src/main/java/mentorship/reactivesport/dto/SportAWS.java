@@ -11,7 +11,9 @@ import java.io.Serializable;
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-public class Attributes implements Serializable {
+public class SportAWS implements Serializable {
 
-    private String name;
+    private int id;
+    private String type;
+    private Attributes attributes;
 }
