@@ -47,8 +47,12 @@ public class SportService {
                 .uri(URI)
                 .retrieve()
                 .bodyToFlux(SportAWS.class)
+                .checkpoint("Converted response to flux")
+                .onBackpressureDrop()
                 .map(sportMapper::toDocument)
+                .checkpoint()
                 .flatMap(sportRepository::save)
+                .checkpoint("Save all sports to database")
                 .map(sportMapper::toDTO)
                 .collectList()
                 .block();
